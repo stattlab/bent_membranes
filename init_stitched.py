@@ -31,14 +31,13 @@ def dist_pbc(x0, x1, Box):
 def xz_rot(mat,angle):
     xz_rot_mat = np.array([[np.cos(angle),0,np.sin(angle)],[0,1,0],[-np.sin(angle),0,np.cos(angle)]])
     return np.matmul(mat,xz_rot_mat)
-def yz_rot(mat,angle):
-    yz_rot_mat = np.array([[1,0,0],[0,np.cos(angle),-np.sin(angle)],[0,np.sin(angle),np.cos(angle)]])
-    return np.matmul(mat,yz_rot_mat)
+
 
 def main(x_box_size,angle, iter_num, lipid_type="DOPC"):
     path = "data/" + lipid_type + "/" + x_box_size + "/" +iter_num+"/" +angle + "/"
     if not os.path.exists(path):
         os.makedirs(path)
+        
     # contents setup
     contents = molecules.Contents()
 
@@ -52,12 +51,12 @@ def main(x_box_size,angle, iter_num, lipid_type="DOPC"):
     
     x_box_size = 12+ x_box_small_equil*(1+np.cos(angle_rad)*2 + 2*np.cos(angle_rad/2))
     y_box_size = y_box_small_equil
-    z_box_size = x_box_small_equil*(1+np.sin(angle_rad)+ np.sin(angle_rad/2)) +2+4*np.cos(angle_rad) #can determine height of membranes via z_
+    z_box_size = x_box_small_equil*(1+np.sin(angle_rad)+ np.sin(angle_rad/2)) +2+4*np.cos(angle_rad) 
 
     q5_type_index = frame.particles.types.index("Q5")
     total_lipid = np.sum(frame.particles.typeid == q5_type_index)
 
-    beads_per_lipid = 12
+    beads_per_lipid = 12 if not "L" in lipid_type else 10
     num_water_x = int(x_box_size*2.1)
     num_water_y = int(y_box_size*2.1)
     grid_upper = np.zeros((num_water_x,num_water_y)) -20
@@ -68,9 +67,9 @@ def main(x_box_size,angle, iter_num, lipid_type="DOPC"):
 
  
     frozen= []
-    #either placement is whole - no PBC - whole - no PBC - whole
-    num_segments = 4 
 
+    #place 4 patches with hardoded angles, x_shift, and z_shift based off of size of equilibrated patch
+    num_segments = 4 
     segments = np.linspace(-angle_rad,angle_rad-angle_rad/num_segments*2,num_segments)
     x_shifts = [-x_box_small_equil*(.5 + np.cos(angle_rad/2) ),-x_box_small_equil*(.5),x_box_small_equil*(.5),x_box_small_equil*(.5+np.cos(angle_rad/2))]
     z_shifts = x_box_small_equil*np.sin(angle_rad) + np.array([-x_box_small_equil*(np.sin(angle_rad)/2  + np.sin(angle_rad/2) ),-x_box_small_equil*(np.sin(angle_rad/2)/2 ),-x_box_small_equil*(np.sin(angle_rad/2)/2 ),-x_box_small_equil*(np.sin(angle_rad)/2  + np.sin(angle_rad/2) )])
@@ -78,14 +77,18 @@ def main(x_box_size,angle, iter_num, lipid_type="DOPC"):
 
     index = 0
     for seg_num, seg_angle, x,z in zip(range(num_segments), segments, x_shifts,z_shifts):
-        # how big are lip[ids and pol;ymer chains]
-        # for each quadrant, for each polymer, make a polymer and change the position to whawt it is in the new quadrant
         lipid_placed = 0
         lipid_actually_placed = 0 
 
         for i in range(total_lipid):
             if lipid_type=="DOPC":
                 lipid = molecules.make_DOPC(contents)
+            elif lipid_type=="DOPE":
+                lipid = molecules.make_DOPE(contents)
+            elif lipid_type == "DPPE":
+                lipid = molecules.make_DPPE(contents)
+            elif lipid_type == "DLPC":
+                lipid = molecules.make_DLPC(contents)
             else:
                 lipid = molecules.make_DPPC(contents)
             positions = frame.particles.position[
@@ -105,6 +108,7 @@ def main(x_box_size,angle, iter_num, lipid_type="DOPC"):
                         positions[i][0] += x_box_small_equil
 
             for i, pos in enumerate(positions):
+                #add beads that are close to either edge to frozen (and frozen.csv)
                 if (seg_num == 0 and pos[0] < -x_box_small_equil/2+1.5) or (seg_num == num_segments-1 and pos[0] >x_box_small_equil/2-2 ) :
                     if (seg_num != num_segments-1  or not np.any(positions[:,0]>x_box_small_equil/2)):
                         frozen.append(index + lipid_actually_placed * beads_per_lipid+i)
@@ -115,11 +119,12 @@ def main(x_box_size,angle, iter_num, lipid_type="DOPC"):
                     percent_across = (pre_shift[0]+x_box_small_equil/2)/x_box_small_equil
                     new_angle = seg_angle + angle_rad/num_segments*2*percent_across
                     shift_x = xz_rot(pre_shift,-new_angle)
-                    # shift_y = yz_rot(np.array(positions[j]),angles_rad[y_iter])
                     lipid.position[j] = (shift_x + np.array([x, 0, z])).tolist()
                     x_pos = lipid.position[j][0]
                     y_pos = lipid.position[j][1]
                     z_pos = lipid.position[j][2]
+
+                    #update grid used to place water
                     closest_x = np.abs(x_range-x_pos).argmin()
                     closest_y = np.abs(y_range-y_pos).argmin()
                     if z_pos > grid_upper[closest_x,closest_y]:
@@ -140,6 +145,7 @@ def main(x_box_size,angle, iter_num, lipid_type="DOPC"):
     z_place_water = np.linspace(
         -z_box_size / 2 + 0.2, z_box_size / 2 - 0.2, int(z_box_size * 2.1)
     )
+
     for x_iter2, x2 in enumerate(x_place_water):
         for y_iter2, y2 in enumerate(y_place_water):
             for z2 in z_place_water:

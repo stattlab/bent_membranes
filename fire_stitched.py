@@ -26,12 +26,8 @@ class Status:
     @property
     def etr(self):
         return str(datetime.timedelta(seconds=self.seconds_remaining))
-def get_not_water(file_name,num_beads):
-    frame = gsd.hoomd.open(file_name)[-1]
-    type_water = np.max(frame.particles.typeid)
-    first_water = frame.particles.typeid.tolist().index(type_water)
-    print(first_water)
-    return range(0,first_water)
+    
+
 def get_not_frozen(path,num_beads):
     unfrozen = []
     frozen = []
@@ -66,7 +62,6 @@ def main(x_box_size,angle, iter_num, lipid_type="DOPC"):
     num_beads = frame.particles.N
     rigid_centers_and_free = hoomd.filter.All()
     unfrozen = hoomd.filter.Tags(get_not_frozen(path,num_beads))
-    not_water = hoomd.filter.Tags(get_not_water(path+"init.gsd",num_beads))
     temp_filter = hoomd.filter.Intersection(rigid_centers_and_free,unfrozen)
     filter = temp_filter
     fire = hoomd.md.minimize.FIRE(dt=dt,forces = [],

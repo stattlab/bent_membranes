@@ -70,6 +70,33 @@ def main(x_box_size, iter_num, lipid_type="DOPC"):
                 theta=theta,
                 is_inverted=is_inverted,
             )
+        elif lipid_type=="DOPE":
+            molecule = molecules.make_DOPE(
+                contents,
+                x_shift=x_shift,
+                y_shift=y_shift,
+                z_shift=z_shift,
+                theta=theta,
+                is_inverted=is_inverted,
+            )
+        elif lipid_type == "DPPE":
+            molecule = molecules.make_DPPE(
+                contents,
+                x_shift=x_shift,
+                y_shift=y_shift,
+                z_shift=z_shift,
+                theta=theta,
+                is_inverted=is_inverted,
+            )
+        elif lipid_type == "DLPC":
+            molecule = molecules.make_DLPC(
+                contents,
+                x_shift=x_shift,
+                y_shift=y_shift,
+                z_shift=z_shift,
+                theta=theta,
+                is_inverted=is_inverted,
+            )
         else:
             molecule = molecules.make_DPPC(
                 contents,
@@ -114,6 +141,7 @@ def main(x_box_size, iter_num, lipid_type="DOPC"):
         -z_box_size / 2 + 0.2, z_box_size / 2 - 0.25, int(z_box_size * 2.2)
     )
 
+    #place water -- works for any non-convex shape -- use different appraoch for filling tubes
     for x_iter2, x2 in enumerate(x_place_water):
         for y_iter2, y2 in enumerate(y_place_water):
             for z2 in z_place_water:

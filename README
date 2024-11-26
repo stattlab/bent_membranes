@@ -1,0 +1,20 @@
+Example workflow for simulating curved membranes with HOOMD blue and Martini:
+
+Supports lipid types:
+DPPE, DOPE, DPPC, DLPC, DOPC
+
+Depends on Martini3 Package: https://github.com/stattlab/martini3.git
+
+Args: lipid_type, initial patch box size, iteration number, imposed angles
+
+Usage:
+python run_all.py initial_box_size imposed_angle iter_num lipid_type
+
+Or sequentially run:
+
+init_small.py x_box_size iter_num lipid_type
+run_small.py x_box_size iter_num lipid_type
+init_stitched.py initial_box_size imposed_angle iter_num lipid_type
+fire_stitched.py initial_box_size imposed_angle iter_num lipid_type
+run_stitched.py initial_box_size imposed_angle iter_num lipid_type
+
